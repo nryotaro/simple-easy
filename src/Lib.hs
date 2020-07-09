@@ -39,3 +39,20 @@ data Neutral
 
 vpar :: Name -> Value
 vpar n = VNeutral (NPar n)
+
+
+type Env = [Value]
+
+evalUp :: TermUp -> Env -> Value
+evalUp (Ann e _  ) d = evalDown e d
+evalUp (Par x    ) d = vpar x
+evalUp (Var i    ) d = d !! i
+evalUp (e1 :@: e2) d = vapp (evalUp e1 d) (evalDown e2 d)
+
+vapp :: Value -> Value -> Value
+vapp (VLam     f) v = f v
+vapp (VNeutral n) v = VNeutral (NApp n v)
+
+evalDown :: TermDown -> Env -> Value
+evalDown (Inf i) d = evalUp i d
+evalDown (Lam e) d = VLam (\x -> evalDown e (x : d))
