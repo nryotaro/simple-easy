@@ -56,3 +56,9 @@ vapp (VNeutral n) v = VNeutral (NApp n v)
 evalDown :: TermDown -> Env -> Value
 evalDown (Inf i) d = evalUp i d
 evalDown (Lam e) d = VLam (\x -> evalDown e (x : d))
+
+data Kind = Star deriving(Show)
+
+data Info = HasKind Kind | HasType Type deriving(Show)
+
+type Context = [(Name, Info)]
