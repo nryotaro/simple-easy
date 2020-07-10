@@ -62,3 +62,13 @@ data Kind = Star deriving(Show)
 data Info = HasKind Kind | HasType Type deriving(Show)
 
 type Context = [(Name, Info)]
+
+kindDown :: Context -> Type -> Kind -> Either String ()
+kindDown context (TPar x) Star = case lookup x context of
+    Just (HasKind Star) -> Right ()
+    Nothing             -> Left "unknown identifier"
+
+
+kindDown context (Fun k0 k1) Star = do
+    kindDown context k0 Star
+    kindDown context k1 Star
