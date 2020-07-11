@@ -63,12 +63,29 @@ data Info = HasKind Kind | HasType Type deriving(Show)
 
 type Context = [(Name, Info)]
 
-kindDown :: Context -> Type -> Kind -> Either String ()
+type Result a = Either String a
+
+throwError :: String -> Result a
+throwError = Left
+
+kindDown :: Context -> Type -> Kind -> Result ()
 kindDown context (TPar x) Star = case lookup x context of
     Just (HasKind Star) -> Right ()
-    Nothing             -> Left "unknown identifier"
+    Nothing             -> throwError "unknown identifier"
 
 
 kindDown context (Fun k0 k1) Star = do
     kindDown context k0 Star
     kindDown context k1 Star
+
+typeUp0 :: Context -> TermUp -> Result Type
+typeUp0 = typeUp 0
+
+typeUp :: Int -> Context -> TermUp -> Result Type
+typeUp i context (Ann e tau) = do
+    kindDown context tau Star
+    typeDown i context e tau
+    return tau
+
+typeDown :: Int -> Context -> TermDown -> Type -> Result ()
+typeDown i context (Inf e) tau = undefined
