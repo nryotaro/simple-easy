@@ -3,6 +3,7 @@ module Lib
     )
 where
 
+import           Control.Monad
 someFunc :: IO ()
 someFunc = putStrLn "someFunc"
 
@@ -82,10 +83,29 @@ typeUp0 :: Context -> TermUp -> Result Type
 typeUp0 = typeUp 0
 
 typeUp :: Int -> Context -> TermUp -> Result Type
-typeUp i context (Ann e tau) = do
-    kindDown context tau Star
-    typeDown i context e tau
-    return tau
+typeUp i context (Ann e t) = do
+    kindDown context t Star
+    typeDown i context e t
+    return t
 
 typeDown :: Int -> Context -> TermDown -> Type -> Result ()
-typeDown i context (Inf e) tau = undefined
+typeDown i context (Inf e) t = do
+    t' <- typeUp i context e
+    unless (t == t') (throwError "type mismatch")
+
+typeDown i context (Lam e) (Fun t t') = typeDown
+    (i + 1)
+    ((Bound i, HasType t) : context)
+    (substDown 0 (Par (Bound i)) e)
+    t'
+
+
+substUp :: Int -> TermUp -> TermUp -> TermUp
+substUp i r (Ann e t) = Ann (substDown i r e) t
+substUp i r (Var j) = if i == j then r else Var j
+substUp i r (Par y) = Par y
+substUp i r (e1 :@: e2) = substUp i r e1 :@: substDown i r e2
+
+substDown :: Int -> TermUp -> TermDown -> TermDown
+substDown i r (Inf e) = Inf (substUp i r e)
+substDown i r (Lam e) = Lam (substDown (i+1) r e)
