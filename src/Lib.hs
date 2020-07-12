@@ -101,11 +101,26 @@ typeDown i context (Lam e) (Fun t t') = typeDown
 
 
 substUp :: Int -> TermUp -> TermUp -> TermUp
-substUp i r (Ann e t) = Ann (substDown i r e) t
-substUp i r (Var j) = if i == j then r else Var j
-substUp i r (Par y) = Par y
+substUp i r (Ann e t  ) = Ann (substDown i r e) t
+substUp i r (Var j    ) = if i == j then r else Var j
+substUp i r (Par y    ) = Par y
 substUp i r (e1 :@: e2) = substUp i r e1 :@: substDown i r e2
 
 substDown :: Int -> TermUp -> TermDown -> TermDown
 substDown i r (Inf e) = Inf (substUp i r e)
-substDown i r (Lam e) = Lam (substDown (i+1) r e)
+substDown i r (Lam e) = Lam (substDown (i + 1) r e)
+
+quote0 :: Value -> TermDown
+quote0 = quote 0
+
+quote :: Int -> Value -> TermDown
+quote i (VLam     f) = Lam (quote (i + 1) (f (vpar (Unquoted i))))
+quote i (VNeutral n) = Inf (neutralQuote i n)
+
+neutralQuote :: Int -> Neutral -> TermUp
+neutralQuote i (NPar x  ) = varpar i x
+neutralQuote i (NApp n v) = neutralQuote i n :@: quote i v
+
+varpar :: Int -> Name -> TermUp
+varpar i (Unquoted k) = Var (i - k - 1)
+varpar i x            = Par x
